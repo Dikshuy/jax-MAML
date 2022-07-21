@@ -2,6 +2,26 @@
 
 Implementation of MAML on Omniglot dataset
 
+### Setting up this repo on Compute Canada
+
+Setting up the virtual environment:
+```bash
+module load python/3.9
+virtualenv cc_maml
+source cc_maml/bin/activate
+```
+
+Installing dependencies:
+```bash
+pip install jax tensorflow tensorflow_datasets matplotlib sklearn optax
+```
+ Adding the code to CC queue:
+ ```bash
+ sbatch job.sh
+ ```
+
+--- 
+
 ### Setting up this repo locally
 
 It's preferred if this is installed in virtual environment, as it will avoid any potential version conflicts.
