@@ -23,6 +23,7 @@ from jax.experimental import optimizers
 from jax.tree_util import tree_multimap
 from tqdm import tqdm
 
+tfds.core.utils.gcs_utils._is_gcs_disabled = True
 
 rng = jax.random.PRNGKey(0)
 rng, init_rng = jax.random.split(rng)
