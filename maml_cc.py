@@ -1,6 +1,6 @@
 import jax
-import jax.numpy as jnp              
-import optax                         
+import jax.numpy as jnp
+import optax
 import numpy as np                   
 import tensorflow_datasets as tfds    
 import tensorflow as tf
@@ -105,29 +105,35 @@ class Dataset:
 urllib3.disable_warnings()  # Disable SSL warnings that may happen during download.
 
 losses = {}
+accuracies = {}
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "--inner-loops", help="number of inner loops: [1,2,3,4,...]", type=list, default=[1]
+    "--inner-loops", help="number of inner loops: 1 2 3 4", type=int, nargs="+", default=1
 )
 parser.add_argument(
-    "--learning-rates", help="learning rates: [0.01, 0.05, ...]", type=list, default=[0.01]
+    "--learning-rates", help="learning rates: 0.01 0.05 0.001", type=float, nargs="+", default=0.01
 )
 parser.add_argument(
     "--train-steps", help="number of training steps: 100", type=int, default=100
 )
 
-args = parser.parse_args()
-learning_rates = args.learning_rates
-num_inner_loops = args.inner_loops
-TRAIN_STEPS = args.train_steps
-# learning_rates = [0.01,0.001]
-# num_inner_loops = [2,3]
-# TRAIN_STEPS = 5
+# args = parser.parse_args()
+# learning_rates = args.learning_rates
+# num_inner_loops = args.inner_loops
+# TRAIN_STEPS = args.train_steps
+learning_rates = [0.01,0.005]
+num_inner_loops = [2,3]
+TRAIN_STEPS = 2
+
+# write the accuracy and losses to these files
+loss_file = open("losses.txt", "w")
+accuracy_file = open("accuracy.txt", "w")
 
 for lr in learning_rates:
   for inner_loop in num_inner_loops:
     maml_losses = []
+    maml_accuracy = []
     for i in tqdm(range(TRAIN_STEPS)):
       train_dataset = Dataset(training=True)
       test_dataset = Dataset(training=False)
@@ -203,6 +209,13 @@ for lr in learning_rates:
           total_loss = loss(params_updated, query_img, query_lab)
           return total_loss
 
+      @jit
+      def acc_func(params, inputs, targets):
+          predictions = net_apply(params, inputs)
+          max_pred = jnp.argmax(predictions, -1)
+          accuracy = jnp.mean(max_pred == targets)
+          return accuracy
+
       # get x_support, y_support, x_query, y_query batch
       x_support_batch = []
       y_support_batch = []
@@ -221,19 +234,25 @@ for lr in learning_rates:
       x_query_batch = np.stack(x_query_batch)
       y_query_batch = np.stack(y_query_batch)
       opt_state, l = batch_step(i, opt_state, x_support_batch, y_support_batch, x_query_batch, y_query_batch)
+      p = get_params(opt_state)
+      acc_val =  onp.mean(vmap(partial(acc_func, p))(x_query_batch, y_query_batch))
       maml_losses.append(l)
+      maml_accuracy.append(acc_val)
 
     net_params = get_params(opt_state)
-    if lr in losses.keys():
-      losses[lr].append({inner_loop: maml_losses})
-    else:
-      losses[lr] = [{inner_loop: maml_losses}]
 
-# for maml_losses in losses:
-#   plt.plot(np.arange(TRAIN_STEPS), np.array(maml_losses))
-# plt.show()
+    loss_file.write(str(lr)+"  "+str(inner_loop)+"  "+str(np.array(maml_losses))+"\n")
+    accuracy_file.write(str(lr)+"  "+str(inner_loop)+"  "+str(np.array(maml_accuracy))+"\n")
+
+    if lr in losses.keys():
+      losses[lr].append({inner_loop: np.array(maml_losses)})
+      accuracies[lr].append({inner_loop: np.array(maml_accuracy)})
+    else:
+      losses[lr] = [{inner_loop: np.array(maml_losses)}]
+      accuracies[lr] = [{inner_loop: np.array(maml_accuracy)}]
 
 print(losses)
-loss_file = open("losses.txt", "w")
-loss_file.write(str(losses))
+print(accuracies)
+
 loss_file.close()
+accuracy_file.close()
