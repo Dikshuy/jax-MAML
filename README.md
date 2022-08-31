@@ -1,7 +1,19 @@
 # MAML using JAX
 
-Implementation of MAML on Omniglot dataset
+Following files are helpful to reproduce the results:
+> debug_maml_omniglot.ipynb:
+This file contains the MAML implementation on the omniglot dataset and the accuracy matrix to validate the paper results
 
+>maml_CC.ipynb:
+This file also contains the omniglot dataset in a more concise way and for setting it up on CC
+
+>sinusoid.ipynb:
+This file contains the sinusoidal implementation of MAML along with the noise in the signal
+
+>sinusoid_with_SGD.ipynb:
+This file contains the stochastic gradient descent implementation of the sinusoidal problem
+
+----
 ### Setting up this repo on Compute Canada
 
 Setting up the virtual environment:
